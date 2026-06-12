@@ -92,6 +92,21 @@ app.get('/api/accounts', (req, res) => {
 // ── Campaigns (spec Screen 4) ───────────────────────────────────────────────
 app.get('/api/campaigns', (_req, res) => res.json(DB.campaigns));
 
+// ── WhatsApp & Email flows (Conversion Flows) ───────────────────────────────
+app.get('/api/flows', (_req, res) => res.json(DB.flows || []));
+app.get('/api/flows/:id/email-preview', (req, res) => {
+  const f = (DB.emailFlows || {})[req.params.id];
+  if (!f) return res.status(404).json({ error: 'Unknown flow.' });
+  const firstName = req.query.firstName || 'Ngozi';
+  res.json({
+    subject: f.subject.replace(/\{FirstName\}/g, firstName),
+    html: renderEmailHtml({
+      subject: f.subject, body: `${f.p1}\n\n${f.p2}`, firstName,
+      tokens: { LastTransactionDate: '14 March 2026', AccountType: 'Savings', BranchName: 'Marina Lagos' }
+    })
+  });
+});
+
 // AI message generation — ≥1.4s visible loading (spec)
 app.post('/api/campaigns/generate-message', async (req, res) => {
   const { segment, customerCount } = req.body || {};
@@ -184,6 +199,7 @@ app.get('/api/history/requests',  async (_req, res) => res.json(await read.reque
 app.get('/api/history/messages',  async (_req, res) => res.json(await read.messages(200)));
 app.get('/api/history/campaigns', async (_req, res) => res.json(await read.campaigns()));
 app.get('/api/history/audit',     async (_req, res) => res.json(await read.audit(200)));
+app.get('/api/history/leads',     async (_req, res) => res.json(await read.leads(200)));
 
 // ── Data import (spec Screen 9) ─────────────────────────────────────────────
 app.get('/api/import/template', (_req, res) => {
@@ -228,6 +244,7 @@ app.post('/api/leads', async (req, res) => {
     stage: 'New', createdAt: new Date().toISOString()
   };
   DB.leads.unshift(lead);
+  persist.lead(lead);
   audit('system', `Lead captured — ${lead.name} · ${lead.campaign || 'no campaign'} · ${lead.source}`);
   // If an email was given, send a real welcome/confirmation
   let delivery = null;
@@ -283,6 +300,10 @@ initDb().then(async (ok) => {
       const sa = await read.audit(200);
       const seededA = new Set(DB.audit.map(a => a.id));
       sa.reverse().forEach(a => { if (a && !seededA.has(a.id)) DB.audit.unshift(a); });
+      if (!DB.leads) DB.leads = [];
+      const sl = await read.leads(200);
+      const seededL = new Set(DB.leads.map(l => l.id));
+      sl.forEach(l => { if (l && !seededL.has(l.id)) DB.leads.unshift(l); });
     } catch (e) { console.warn('Rehydrate skipped:', e.message); }
   }
   app.listen(PORT, () => console.log(`\n🏦 IGE Banking v2 API on http://localhost:${PORT}\n   Email: ${messagingStatus().email.provider}  ·  SMS: ${messagingStatus().sms.provider}  ·  DB: ${dbStatus().connected ? 'connected' : 'in-memory'}\n`));

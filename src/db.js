@@ -83,8 +83,20 @@ async function createTables() {
       event       TEXT,
       app_user    TEXT
     );
+    CREATE TABLE IF NOT EXISTS leads (
+      id          TEXT PRIMARY KEY,
+      ts          TIMESTAMPTZ NOT NULL DEFAULT now(),
+      name        TEXT,
+      phone       TEXT,
+      email       TEXT,
+      campaign    TEXT,
+      source      TEXT,
+      stage       TEXT,
+      data        JSONB
+    );
     CREATE INDEX IF NOT EXISTS idx_requests_ts ON requests(ts DESC);
     CREATE INDEX IF NOT EXISTS idx_messages_ts ON messages(ts DESC);
+    CREATE INDEX IF NOT EXISTS idx_leads_ts ON leads(ts DESC);
   `);
 }
 
@@ -112,6 +124,11 @@ export const persist = {
   audit: (a) => safe(() => pool.query(
     'INSERT INTO audit(id,type,event,app_user) VALUES($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING',
     [a.id, a.type, a.event, a.user]
+  )),
+  lead: (l) => safe(() => pool.query(
+    `INSERT INTO leads(id,name,phone,email,campaign,source,stage,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT (id) DO UPDATE SET stage=EXCLUDED.stage, data=EXCLUDED.data`,
+    [l.id, l.name, l.phone, l.email, l.campaign, l.source, l.stage, JSON.stringify(l)]
   ))
 };
 
@@ -120,5 +137,6 @@ export const read = {
   requests: async (limit = 100) => (await safe(() => pool.query('SELECT method,path,status,ts FROM requests ORDER BY ts DESC LIMIT $1', [limit])))?.rows || [],
   campaigns: async () => (await safe(() => pool.query('SELECT data FROM campaigns ORDER BY ts DESC')))?.rows?.map(r => r.data) || [],
   messages: async (limit = 200) => (await safe(() => pool.query('SELECT data FROM messages ORDER BY ts DESC LIMIT $1', [limit])))?.rows?.map(r => r.data) || [],
-  audit: async (limit = 200) => (await safe(() => pool.query('SELECT id,type,event,app_user AS user,ts FROM audit ORDER BY ts DESC LIMIT $1', [limit])))?.rows || []
+  audit: async (limit = 200) => (await safe(() => pool.query('SELECT id,type,event,app_user AS user,ts FROM audit ORDER BY ts DESC LIMIT $1', [limit])))?.rows || [],
+  leads: async (limit = 200) => (await safe(() => pool.query('SELECT data FROM leads ORDER BY ts DESC LIMIT $1', [limit])))?.rows?.map(r => r.data) || []
 };

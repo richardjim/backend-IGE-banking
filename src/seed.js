@@ -69,6 +69,16 @@ export function buildSeed() {
       { id: 'cmp-atrisk', name: 'At Risk — Win-Back Bundle Offer',           segment: 'atrisk',    channel: 'Email', sent: 0,   opened: 0,   openRate: 0,  responded: 0,  attributed: 0,        status: 'Draft',     template: 'TPL-RISK-001',  createdAt: isoDaysAgo(1) }
     ],
 
+    // ── WhatsApp / Email conversion flows ───────────────────────────────────
+    flows: [
+      { id: 'debit',   name: 'Debit Card Acquisition',  conversion: 22.4, status: 'Live',  reward: '₦500 airtime' },
+      { id: 'dormant', name: 'Dormant Reactivation',    conversion: 38.1, status: 'Live',  reward: '₦500 airtime' },
+      { id: 'kyc',     name: 'KYC Self-Service Update',  conversion: 61.2, status: 'Live',  reward: '₦150 data bundle' },
+      { id: 'salary',  name: 'Salary Account Enrolment', conversion: 14.7, status: 'Live',  reward: '₦2,000 welcome' },
+      { id: 'bnpl',    name: 'BNPL Quick Accept',        conversion: 0,    status: 'Draft', reward: 'None' },
+      { id: 'fx',      name: 'FX Travel Activation',     conversion: 0,    status: 'Draft', reward: '₦1,000 activation' }
+    ],
+
     // ── Email flow templates (CBN-compliant copy) ───────────────────────────
     emailFlows: {
       dormant:    { subject: 'We miss you, {FirstName} — come back to FirstBank', p1: 'Hi {FirstName}, we noticed your {AccountType} account has been quiet since {LastTransactionDate}.', p2: 'Reactivate today and enjoy zero-fee transfers for 30 days. Your relationship manager at {BranchName} is ready to help.', cta: 'Reactivate now →' },
