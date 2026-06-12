@@ -15,7 +15,7 @@ const SEGMENT_BRIEF = {
   kyc:        'A customer who must complete KYC to unlock full account access. Simple steps, CBN deadline, reassuring.'
 };
 
-const CBN_OPTOUT = 'Reply STOP to opt out. UBA Nigeria · CBN-licensed · T&Cs apply.';
+const CBN_OPTOUT = 'Reply STOP to opt out. FirstBank Nigeria · CBN-licensed · T&Cs apply.';
 
 export async function generateMessage({ segment, customerCount = 0 }) {
   const key = (segment || 'dormant').toLowerCase();
@@ -60,7 +60,7 @@ Return ONLY raw JSON, no markdown, with keys: subject, body.`;
 function fallbackCopy(key) {
   const map = {
     dormant: {
-      subject: 'We miss you, [FirstName] — come back to UBA',
+      subject: 'We miss you, [FirstName] — come back to FirstBank',
       body: `Hi [FirstName],\n\nWe noticed your [AccountType] account has been quiet since [LastTransactionDate]. We'd love to welcome you back.\n\nReactivate today and enjoy zero-fee transfers for the next 30 days, plus ₦500 airtime on your first transaction. Your relationship manager at [BranchName] is ready to help.\n\n${CBN_OPTOUT}`
     },
     champions: {
@@ -76,7 +76,7 @@ function fallbackCopy(key) {
       body: `Hi [FirstName],\n\nThank you for banking with us. Based on your activity, you may qualify for a pre-approved loan or our investment product.\n\n${CBN_OPTOUT}`
     },
     promising: {
-      subject: 'Get more from your UBA account, [FirstName]',
+      subject: 'Get more from your FirstBank account, [FirstName]',
       body: `Hi [FirstName],\n\nUnlock more from your [AccountType] account. Complete one more transaction this week and earn ₦500 airtime.\n\n${CBN_OPTOUT}`
     },
     'kyc-tier1': {
@@ -94,7 +94,7 @@ export function renderEmailHtml({ subject, body, firstName = 'Customer', tokens 
   const paragraphs = fill(body).split('\n').filter(Boolean)
     .map(p => `<p style="font-size:13px;color:#444;line-height:1.7;margin:0 0 10px">${escapeHtml(p)}</p>`).join('');
   return `<div style="max-width:560px;margin:0 auto;border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;font-family:Arial,Helvetica,sans-serif">
-    <div style="background:#05192D;padding:14px 18px;color:#fff;font-size:13px"><strong>UBA Nigeria</strong> &lt;campaigns@uba.ng&gt;</div>
+    <div style="background:#05192D;padding:14px 18px;color:#fff;font-size:13px"><strong>FirstBank Nigeria</strong> &lt;campaigns@uba.ng&gt;</div>
     <div style="background:#F1F5F9;padding:10px 18px;font-size:13px;font-weight:700;color:#05192D">${escapeHtml(fill(subject))}</div>
     <div style="background:#fff;padding:18px">${paragraphs}
       <div style="text-align:center;margin:14px 0"><a href="#" style="background:#0EA5A0;color:#fff;padding:11px 26px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;display:inline-block">Get started →</a></div>
