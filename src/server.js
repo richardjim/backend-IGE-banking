@@ -215,6 +215,54 @@ app.post('/api/import', upload.single('file'), (req, res) => {
 
 // ── Plans + demo reset ──────────────────────────────────────────────────────
 app.get('/api/plans', (_req, res) => res.json(DB.plans));
+
+// ── Leads (manual entry form) ───────────────────────────────────────────────
+if (!DB.leads) DB.leads = [];
+app.get('/api/leads', (_req, res) => res.json(DB.leads));
+app.post('/api/leads', async (req, res) => {
+  const { firstName, surname, phone, email, state, campaign, source } = req.body || {};
+  if (!firstName || !surname || !phone) return res.status(400).json({ error: 'First name, surname and phone are required.' });
+  const lead = {
+    id: 'lead-' + nanoid(6), name: (firstName + ' ' + surname).trim(),
+    phone, email: email || '', state: state || '', campaign: campaign || '', source: source || 'Manual',
+    stage: 'New', createdAt: new Date().toISOString()
+  };
+  DB.leads.unshift(lead);
+  audit('system', `Lead captured — ${lead.name} · ${lead.campaign || 'no campaign'} · ${lead.source}`);
+  // If an email was given, send a real welcome/confirmation
+  let delivery = null;
+  if (email) {
+    const copy = await generateMessage({ segment: 'promising' });
+    delivery = await sendEmail({ to: email, subject: copy.subject.replace(/\[FirstName\]/g, firstName), html: renderEmailHtml({ subject: copy.subject, body: copy.body, firstName: firstName }) });
+  }
+  res.json({ ok: true, lead, delivery });
+});
+
+// ── Branch routing ──────────────────────────────────────────────────────────
+app.post('/api/branches/route', (req, res) => {
+  const { name, branch, campaign } = req.body || {};
+  if (!name || !branch) return res.status(400).json({ error: 'name and branch are required.' });
+  audit('system', `Lead routed — ${name} → ${branch}${campaign ? ' · ' + campaign : ''}`);
+  res.json({ ok: true, name, branch, appointment: 'Tomorrow 10:00 AM' });
+});
+app.post('/api/branches/auto-route', (_req, res) => {
+  audit('system', 'Auto-routed 14 inbound leads across branches');
+  res.json({ ok: true, routed: 14 });
+});
+
+// ── Reminders (generic, can send real email) ────────────────────────────────
+app.post('/api/reminders', async (req, res) => {
+  const { name, campaign, email, type = 'dormant' } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'name is required.' });
+  audit('send', `Reminder sent — ${name}${campaign ? ' · ' + campaign : ''}`);
+  let delivery = null;
+  if (email) {
+    const copy = await generateMessage({ segment: type });
+    delivery = await sendEmail({ to: email, subject: copy.subject.replace(/\[FirstName\]/g, name.split(' ')[0]), html: renderEmailHtml({ subject: copy.subject, body: copy.body, firstName: name.split(' ')[0] }) });
+  }
+  res.json({ ok: true, name, delivery });
+});
+
 app.post('/api/demo/reset', (_req, res) => { DB = buildSeed(); res.json({ status: 'reset' }); });
 
 // ── Fallback + error handler ────────────────────────────────────────────────
